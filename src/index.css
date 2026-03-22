@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 20px;
+  }
+  
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #475569; /* slate-600 */
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
+  }
+  
+  .dark .custom-scrollbar {
+    scrollbar-color: #475569 transparent;
+  }
+  
+  .text-xxs {
+    font-size: 0.65rem;
+    line-height: 1rem;
+  }
+
+  .bg-grainy-gradient {
+    /* Light Mode: Mesh Gradient (Orange, Purple, Blue) with noise */
+    background-color: #ffffff;
+    background-image: 
+        /* Noise Texture */
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E"),
+        /* Gradient Layers mirroring the reference image */
+        radial-gradient(at 40% 20%, hsla(28, 100%, 74%, 0.5) 0px, transparent 50%),   /* Orange */
+        radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 0.4) 0px, transparent 50%),    /* Cyan */
+        radial-gradient(at 0% 50%, hsla(340, 100%, 76%, 0.4) 0px, transparent 50%),   /* Pink/Red */
+        radial-gradient(at 70% 60%, hsla(250, 100%, 70%, 0.6) 0px, transparent 50%),   /* Purple */
+        radial-gradient(at 0% 100%, hsla(240, 100%, 70%, 0.4) 0px, transparent 50%),   /* Deep Blue */
+        radial-gradient(at 80% 100%, hsla(240, 100%, 80%, 0.4) 0px, transparent 50%);  /* Light Blue */
+  }
+
+  .dark .bg-grainy-gradient {
+    /* Dark Mode: Deep Cosmic Mesh Gradient */
+    background-color: #0f172a;
+    background-image: 
+        /* Noise Texture */
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E"),
+        /* Dark Gradient Layers */
+        radial-gradient(at 40% 20%, hsla(28, 100%, 64%, 0.15) 0px, transparent 50%),   /* Orange Dim */
+        radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 0.1) 0px, transparent 50%),     /* Cyan Dim */
+        radial-gradient(at 0% 50%, hsla(340, 100%, 76%, 0.1) 0px, transparent 50%),    /* Pink Dim */
+        radial-gradient(at 70% 60%, hsla(250, 100%, 70%, 0.15) 0px, transparent 50%),   /* Purple Dim */
+        radial-gradient(at 0% 100%, hsla(240, 100%, 70%, 0.1) 0px, transparent 50%),    /* Deep Blue Dim */
+        linear-gradient(to bottom right, #0f172a, #1e293b, #172554);
+  }
+}
