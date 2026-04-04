@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { 
   CreditCard, Banknote, AlertTriangle, 
   TrendingUp, TrendingDown, Calendar, ArrowRight,
@@ -10,50 +11,99 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { useMockData } from '../context/MockDataContext';
+import API from '../lib/api/api';
+import { getHomeDashboardMetrics } from '../lib/api/report';
 
-// --- Mock Data ---
-
-const COLLECTION_DATA = [
-  { day: 'Mon', expected: 120000, actual: 115000 },
-  { day: 'Tue', expected: 135000, actual: 140000 },
-  { day: 'Wed', expected: 125000, actual: 122000 },
-  { day: 'Thu', expected: 140000, actual: 110000 },
-  { day: 'Fri', expected: 150000, actual: 148000 },
-  { day: 'Sat', expected: 90000, actual: 95000 },
-  { day: 'Sun', expected: 40000, actual: 38000 },
-];
-
-
-
-const ACTION_ITEMS = [
-  { label: 'EMIs Due Today', count: '45', value: '₹8.2 L', critical: true },
-  { label: 'Missed Repayments', count: '12', value: '₹1.5 L', critical: true },
-  { label: 'Loans Pending Approval', count: '8', value: '₹12.5 L', critical: false },
-  { label: 'Repayments Waiting', count: '3', value: '₹45k', critical: false },
-];
+type LoanRow = {
+  id: string;
+  borrowerName: string;
+  amount: number;
+  releaseDate: string;
+  status: 'Pending' | 'Open' | 'Fully Paid' | 'Defaulted' | 'Restructured';
+  nextRepayment: string;
+  amountPaid: number;
+};
 
 const Home = () => {
   const navigate = useNavigate();
-  const { loans } = useMockData();
+  const [loans, setLoans] = useState<LoanRow[]>([]);
+  const [homeMetrics, setHomeMetrics] = useState<any>(null);
+
+  useEffect(() => {
+    const loadHomeData = async () => {
+      try {
+        const [metrics, loansRes] = await Promise.all([
+          getHomeDashboardMetrics(),
+          API.get('/loans')
+        ]);
+
+        const mappedLoans: LoanRow[] = (loansRes.data || []).map((l: any) => {
+          const amountPaid = l.schedule?.reduce((acc: number, item: any) => acc + Number(item.paidAmount || 0), 0) || 0;
+          const nextDue = l.schedule?.find((item: any) => item.status === 'pending');
+          const nextRepayment = nextDue ? new Date(nextDue.dueDate).toLocaleDateString() : 'Fully Paid';
+
+          const mapLoanStatus = (rawStatus: string | undefined): LoanRow['status'] => {
+            switch ((rawStatus || '').toLowerCase()) {
+              case 'approved':
+                return 'Open';
+              case 'pending':
+                return 'Pending';
+              case 'closed':
+              case 'paid':
+                return 'Fully Paid';
+              case 'defaulted':
+              case 'overdue':
+                return 'Defaulted';
+              case 'restructured':
+                return 'Restructured';
+              default:
+                return 'Pending';
+            }
+          };
+
+          return {
+            id: l._id,
+            borrowerName: l.borrowerId?.userId?.name || l.borrowerId?.name || 'Unknown',
+            amount: Number(l.principal || 0),
+            releaseDate: l.createdAt ? new Date(l.createdAt).toLocaleDateString() : '-',
+            status: mapLoanStatus(l.status),
+            nextRepayment,
+            amountPaid
+          };
+        });
+
+        setHomeMetrics(metrics);
+        setLoans(mappedLoans);
+      } catch (error) {
+        console.error('Failed to load home data:', error);
+      }
+    };
+
+    loadHomeData();
+  }, []);
 
   // Calculate Real KPIs
   const totalValue = loans.reduce((acc, loan) => acc + loan.amount, 0);
   const totalOutstanding = loans.reduce((acc, loan) => acc + (loan.amount - loan.amountPaid), 0);
   const defaultedCount = loans.filter(l => l.status === 'Defaulted').length;
   const activeCount = loans.filter(l => l.status === 'Open' || l.status === 'Pending').length;
+  const fullyPaidCount = loans.filter(l => l.status === 'Fully Paid').length;
 
-  // Derive Overdue Loans (mock logic based on status)
+  // Derive Overdue Loans (real logic based on status)
   const overdueLoans = loans
-    .filter(l => l.status === 'Defaulted')
+    .filter(l => l.status === 'Defaulted' || (l.nextRepayment && l.nextRepayment.includes('Overdue')))
     .slice(0, 5)
     .map(l => ({
         id: l.id,
         name: l.borrowerName,
         amount: `₹${l.amount.toLocaleString()}`,
-        days: Math.floor(Math.random() * 90) + 1, // Mock days
+        days: 0, // Days overdue calculation requires scheduled dates
         status: 'Overdue'
     }));
+  
+  const overdueAmount = loans
+    .filter(l => l.status === 'Defaulted')
+    .reduce((acc, l) => acc + (l.amount - l.amountPaid), 0);
 
   const recentActivity = loans
       .slice(-5)
@@ -82,23 +132,54 @@ const Home = () => {
           };
       });
 
+  const collectionTrend = homeMetrics?.collectionTrend || [];
+  const latestCollectionActual = Number(collectionTrend[collectionTrend.length - 1]?.actual || 0);
+  const previousCollectionActual = Number(collectionTrend[collectionTrend.length - 2]?.actual || 0);
+  const collectionChangePct =
+    previousCollectionActual > 0
+      ? ((latestCollectionActual - previousCollectionActual) / previousCollectionActual) * 100
+      : null;
+
+  const formatChange = (value: number | null) => {
+    if (value === null || Number.isNaN(value)) {
+      return 'N/A';
+    }
+
+    const sign = value > 0 ? '+' : '';
+    return `${sign}${value.toFixed(1)}%`;
+  };
+
   const KPI_DATA = [
-    { label: 'Total Active Loans', value: activeCount.toString(), change: '+2.4%', trend: 'up', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-    { label: 'Loan Portfolio Value', value: `₹${(totalValue/100000).toFixed(1)} L`, change: '+12%', trend: 'up', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-    { label: 'Total Outstanding', value: `₹${(totalOutstanding/100000).toFixed(1)} L`, change: '-0.5%', trend: 'down', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-    { label: 'Today\'s Collection', value: '₹4.5 L', change: '+8%', trend: 'up', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-    { label: 'Overdue Amount', value: '₹28.4 L', change: '+1.2%', trend: 'down', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20' },
-    { label: 'Portfolio at Risk (PAR)', value: '3.2%', change: '-0.1%', trend: 'up', color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-800' },
-    { label: 'Defaulted Loans', value: defaultedCount.toString(), change: '+0', trend: 'down', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20' },
+    { label: 'Total Active Loans', value: activeCount.toString(), change: formatChange(null), trend: 'flat', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+    { label: 'Loan Portfolio Value', value: `₹${(totalValue/100000).toFixed(1)} L`, change: formatChange(null), trend: 'flat', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+    { label: 'Total Outstanding', value: `₹${(totalOutstanding/100000).toFixed(1)} L`, change: formatChange(null), trend: 'flat', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    {
+      label: 'Today\'s Collection',
+      value: `₹${(((homeMetrics?.todayCollection || 0) as number)/100000).toFixed(1)} L`,
+      change: formatChange(collectionChangePct),
+      trend: collectionChangePct === null ? 'flat' : collectionChangePct >= 0 ? 'up' : 'down',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20'
+    },
+    { label: 'Overdue Amount', value: `₹${(overdueAmount/100000).toFixed(1)} L`, change: formatChange(null), trend: 'flat', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20' },
+    { label: 'Portfolio at Risk (PAR)', value: `${((homeMetrics?.portfolioAtRisk || 0) as number).toFixed(1)}%`, change: formatChange(null), trend: 'flat', color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-800' },
+    { label: 'Defaulted Loans', value: defaultedCount.toString(), change: formatChange(null), trend: 'flat', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20' },
   ];
 
   const LOAN_STATUS_DATA = [
     { name: 'Active', value: activeCount, color: '#10B981' }, 
-    { name: 'Due Today', value: 45, color: '#3B82F6' },
-    { name: 'Overdue', value: defaultedCount, color: '#F59E0B' },
-    { name: 'Fully Paid', value: loans.filter(l => l.status === 'Fully Paid').length, color: '#64748B' },
+    { name: 'Due Today', value: Number(homeMetrics?.actionItems?.[0]?.count || 0), color: '#3B82F6' },
+    { name: 'Overdue', value: overdueLoans.length, color: '#F59E0B' },
+    { name: 'Fully Paid', value: fullyPaidCount, color: '#64748B' },
     { name: 'Defaulted', value: defaultedCount, color: '#EF4444' },
   ];
+  
+  const COLLECTION_DATA = homeMetrics?.collectionTrend || [];
+  const ACTION_ITEMS = (homeMetrics?.actionItems || []).map((item: any) => ({
+    ...item,
+    count: Number(item.count || 0).toLocaleString(),
+    value: `₹${(Number(item.value || 0) / 100000).toFixed(1)} L`
+  }));
 
   return (
     <div className="space-y-6 pb-10">
@@ -111,7 +192,8 @@ const Home = () => {
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400 line-clamp-2 min-h-[2.5em]">{kpi.label}</p>
               <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5", kpi.bg, kpi.color)}>
                 {kpi.change}
-                {kpi.trend === 'up' ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
+                {kpi.trend === 'up' && <TrendingUp size={8} />}
+                {kpi.trend === 'down' && <TrendingDown size={8} />}
               </span>
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">{kpi.value}</h3>
@@ -193,7 +275,7 @@ const Home = () => {
                    {/* Center Text */}
                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="text-center">
-                         <span className="block text-2xl font-bold text-slate-900 dark:text-white">1,530</span>
+                         <span className="block text-2xl font-bold text-slate-900 dark:text-white">{loans.length.toLocaleString()}</span>
                          <span className="text-xs text-gray-500 dark:text-gray-400">Total Loans</span>
                       </div>
                    </div>
@@ -229,15 +311,15 @@ const Home = () => {
              <div className="grid grid-cols-3 gap-4 p-5 pb-2">
                 <div className="bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
                     <p className="text-xs text-yellow-700 dark:text-yellow-500 font-semibold mb-1">1-30 Days</p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">₹12.4 L</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">₹{(((homeMetrics?.overdueBuckets?.d1to30 || 0) as number) / 100000).toFixed(1)} L</p>
                 </div>
                 <div className="bg-orange-50 dark:bg-orange-900/10 p-3 rounded-lg border border-orange-100 dark:border-orange-900/30">
                     <p className="text-xs text-orange-700 dark:text-orange-500 font-semibold mb-1">31-90 Days</p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">₹8.2 L</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">₹{(((homeMetrics?.overdueBuckets?.d31to90 || 0) as number) / 100000).toFixed(1)} L</p>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-100 dark:border-red-900/30">
                     <p className="text-xs text-red-700 dark:text-red-500 font-semibold mb-1">90+ Days</p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">₹7.8 L</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">₹{(((homeMetrics?.overdueBuckets?.d90plus || 0) as number) / 100000).toFixed(1)} L</p>
                 </div>
              </div>
 
@@ -298,7 +380,7 @@ const Home = () => {
                     Today's Actions
                 </h3>
                 <div className="space-y-3">
-                    {ACTION_ITEMS.map((item, idx) => (
+                    {ACTION_ITEMS.map((item: { critical?: boolean; label: string; count: string; value: string }, idx: number) => (
                         <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
                              <div>
                                  <p className={cn("text-xs font-medium", item.critical ? "text-red-300" : "text-gray-300")}>{item.label}</p>

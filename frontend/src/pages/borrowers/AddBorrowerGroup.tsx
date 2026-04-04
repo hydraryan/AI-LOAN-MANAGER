@@ -5,8 +5,9 @@ import API from '../../lib/api/api';
 
 type Borrower = {
   _id: string;
-  userId: {
-    name: string;
+  name?: string;
+  userId?: {
+    name?: string;
   };
 };
 
@@ -81,7 +82,7 @@ const AddBorrowerGroup = () => {
 
   // 🔥 FILTER
   const filteredBorrowers = borrowers.filter(b =>
-    b.userId?.name.toLowerCase().includes(memberSearch.toLowerCase())
+    (b.userId?.name || b.name || '').toLowerCase().includes(memberSearch.toLowerCase())
   );
 
   return (
@@ -101,8 +102,8 @@ const AddBorrowerGroup = () => {
         {/* LEFT */}
         <div className="lg:col-span-2 space-y-6">
 
-          <div className="bg-white p-6 border rounded">
-            <h3 className="flex items-center gap-2 mb-4">
+          <div className="bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded">
+            <h3 className="flex items-center gap-2 mb-4 dark:text-white">
               <Users size={20} /> Group Details
             </h3>
 
@@ -112,7 +113,7 @@ const AddBorrowerGroup = () => {
               value={formData.groupName}
               onChange={handleChange}
               required
-              className="w-full border px-3 py-2 rounded mb-4"
+              className="w-full border dark:border-gray-700 px-3 py-2 rounded mb-4 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500"
             />
 
             <textarea
@@ -120,7 +121,7 @@ const AddBorrowerGroup = () => {
               placeholder="Description"
               value={formData.description}
               onChange={handleChange}
-              className="w-full border px-3 py-2 rounded mb-4"
+              className="w-full border dark:border-gray-700 px-3 py-2 rounded mb-4 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500"
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -130,14 +131,14 @@ const AddBorrowerGroup = () => {
                 name="leaderId"
                 value={formData.leaderId}
                 onChange={handleChange}
-                className="border px-3 py-2 rounded"
+                className="border dark:border-gray-700 px-3 py-2 rounded dark:bg-gray-900 dark:text-white"
               >
                 <option value="">Select Leader</option>
                 {selectedMembers.map(id => {
                   const member = borrowers.find(b => b._id === id);
                   return member ? (
                     <option key={id} value={id}>
-                      {member.userId.name}
+                      {member.userId?.name || member.name || 'Unknown'}
                     </option>
                   ) : null;
                 })}
@@ -204,7 +205,7 @@ const AddBorrowerGroup = () => {
                     : ''
                 }`}
               >
-                {b.userId.name}
+                {b.userId?.name || b.name || 'Unknown'}
               </div>
             ))}
 

@@ -50,11 +50,11 @@ const ViewRepayments = () => {
         placeholder="Search borrower..."
         value={searchTerm}
         onChange={e => setSearchTerm(e.target.value)}
-        className="border px-3 py-2 rounded"
+        className="border px-3 py-2 rounded dark:bg-gray-900 dark:text-white dark:border-gray-700"
       />
 
       {/* Table */}
-      <div className="bg-white rounded shadow border">
+      <div className="bg-white dark:bg-gray-800 rounded shadow border dark:border-gray-700">
         {loading ? (
           <div className="p-4">Loading...</div>
         ) : (

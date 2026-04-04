@@ -2,6 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import path from "path";
 import cors from "cors";
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import connectDB from "./config/db";
 
 dotenv.config({
@@ -24,12 +26,21 @@ import accountRoutes from "./routes/accountRoutes";
 const app = express();
 
 connectDB();
+app.set("trust proxy", 1);
 
-app.use(cors({
-  origin: "http://localhost:5173"
-}));
-
-app.use(express.json());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+    credentials: true
+  })
+);
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false
+  })
+);
+app.use(cookieParser());
+app.use(express.json({ limit: "1mb" }));
 
 app.get("/", (_req, res) => {
   res.send("API Running");

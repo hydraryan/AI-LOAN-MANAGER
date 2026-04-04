@@ -8,5 +8,6 @@ const userController_1 = require("../controllers/userController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = express_1.default.Router();
 router.get("/", authMiddleware_1.authMiddleware, userController_1.getUsers);
+router.post("/", authMiddleware_1.authMiddleware, userController_1.createUser);
 exports.default = router;
 //# sourceMappingURL=userRoutes.js.map

@@ -37,8 +37,14 @@ const mongoose_1 = __importStar(require("mongoose"));
 const borrowerSchema = new mongoose_1.Schema({
     userId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
+        ref: "User"
+    },
+    name: String,
+    email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+        sparse: true
     },
     phone: String,
     address: String

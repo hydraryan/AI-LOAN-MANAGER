@@ -3,24 +3,47 @@ import { Loan } from "../models";
 import { generateSchedule } from "../utils/loanCalculator";
 
 export const createLoan = async (req: Request, res: Response) => {
-  const { borrowerId, principal, interestRate, tenureMonths } = req.body;
+  try {
+    const { borrowerId, principal, interestRate, tenureMonths } = req.body;
 
-  const { emi, schedule } = generateSchedule(
-    principal,
-    interestRate,
-    tenureMonths
-  );
+    if (!borrowerId) {
+      return res.status(400).json({ error: "borrowerId is required" });
+    }
 
-  const loan = await Loan.create({
-    borrowerId,
-    principal,
-    interestRate,
-    tenureMonths,
-    emi,
-    schedule
-  });
+    const parsedPrincipal = Number(principal);
+    const parsedInterestRate = Number(interestRate);
+    const parsedTenureMonths = Number(tenureMonths);
 
-  res.json(loan);
+    if (
+      Number.isNaN(parsedPrincipal) ||
+      Number.isNaN(parsedInterestRate) ||
+      Number.isNaN(parsedTenureMonths) ||
+      parsedPrincipal <= 0 ||
+      parsedInterestRate < 0 ||
+      parsedTenureMonths <= 0
+    ) {
+      return res.status(400).json({ error: "Invalid loan input values" });
+    }
+
+    const { emi, schedule } = generateSchedule(
+      parsedPrincipal,
+      parsedInterestRate,
+      parsedTenureMonths
+    );
+
+    const loan = await Loan.create({
+      borrowerId,
+      principal: parsedPrincipal,
+      interestRate: parsedInterestRate,
+      tenureMonths: parsedTenureMonths,
+      emi,
+      schedule
+    });
+
+    res.status(201).json(loan);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 };
 export const getLoans = async (_req: Request, res: Response) => {
   const loans = await Loan.find().populate({
@@ -28,14 +51,5 @@ export const getLoans = async (_req: Request, res: Response) => {
     populate: { path: "userId" }
   });
 
-  const formatted = loans.map((loan) => ({
-    id: loan._id,
-    borrower: (loan.borrowerId as any)?.userId?.name,
-    principal: loan.principal,
-    emi: loan.emi,
-    status: loan.status,
-    schedule: loan.schedule
-  }));
-
-  res.json(formatted);
+  res.json(loans);
 };

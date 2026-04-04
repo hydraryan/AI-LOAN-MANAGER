@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, Search, Shield } from 'lucide-react';
+import { Search, Shield } from 'lucide-react';
 import { getUsers } from '../../lib/api/user';
 
 interface User {
     id: string;
     name: string;
     email: string;
-    role: 'Admin' | 'Staff' | 'Manager';
-    status: 'Active' | 'Inactive';
+  role: 'Admin';
     lastActive: string;
 }
 
@@ -31,14 +30,9 @@ const ViewUsers = () => {
 
   return (
     <div className="space-y-6">
-       <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Manage system access and roles</p>
-          </div>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium flex items-center gap-2">
-            <UserPlus size={18} /> Add User
-          </button>
+       <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">View admin users with system access</p>
        </div>
 
        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -56,53 +50,44 @@ const ViewUsers = () => {
             </div>
        </div>
 
-       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900/50">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Last Active</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                </thead>
-
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {users
-                      .filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                            <td className="px-6 py-4 text-sm">
-                                <div className="font-medium text-gray-900 dark:text-white">{user.name}</div>
-                                <div className="text-gray-500 dark:text-gray-400">{user.email}</div>
-                            </td>
-
-                            <td className="px-6 py-4 text-sm text-gray-500 flex items-center gap-1">
-                                <Shield size={14} /> {user.role}
-                            </td>
-
-                            <td className="px-6 py-4 text-sm">
-                                <span className={`px-2 text-xs font-semibold rounded-full ${
-                                    user.status === 'Active'
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                    {user.status}
-                                </span>
-                            </td>
-
-                            <td className="px-6 py-4 text-right text-sm text-gray-500">
-                                {user.lastActive}
-                            </td>
-
-                            <td className="px-6 py-4 text-right text-sm font-medium text-blue-600 cursor-pointer hover:underline">
-                                Edit Permissions
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-             </table>
+       <div className="rounded-xl shadow-lg border dark:border-gray-700 bg-white dark:bg-gray-800 overflow-x-auto animate-fadein">
+         {users.length === 0 ? (
+           <div className="p-8 text-center text-gray-400 dark:text-gray-500 flex flex-col items-center">
+             <Shield className="w-10 h-10 mb-2 text-gray-300 dark:text-gray-600" />
+             No users found
+           </div>
+         ) : (
+           <table className="min-w-full text-sm text-left">
+             <thead className="bg-gray-50 dark:bg-gray-900/60">
+               <tr>
+                 <th className="px-6 py-3 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">User</th>
+                 <th className="px-6 py-3 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Role</th>
+                 <th className="px-6 py-3 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider text-right">Last Active</th>
+                 <th className="px-6 py-3 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider text-right">Actions</th>
+               </tr>
+             </thead>
+             <tbody>
+               {users
+                 .filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                 .map((user) => (
+                   <tr key={user.id} className="transition-colors duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                     <td className="px-6 py-4 text-sm">
+                       <div className="font-medium text-gray-900 dark:text-white">{user.name}</div>
+                       <div className="text-gray-500 dark:text-gray-400">{user.email}</div>
+                     </td>
+                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                       <Shield size={14} /> {user.role}
+                     </td>
+                     <td className="px-6 py-4 text-right text-sm text-gray-500">{user.lastActive}</td>
+                     <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                       <button className="text-blue-600 hover:underline">Edit</button>
+                       <button className="text-red-500 hover:underline">Delete</button>
+                     </td>
+                   </tr>
+                 ))}
+             </tbody>
+           </table>
+         )}
        </div>
     </div>
   );

@@ -5,9 +5,21 @@ const models_1 = require("../models");
 // ✅ CREATE BORROWER
 const createBorrower = async (req, res) => {
     try {
-        const { userId, phone, address } = req.body;
+        const { userId, name, email, phone, address } = req.body;
+        if (!userId && (!name || !email)) {
+            return res.status(400).json({ error: "Either userId or both name and email are required" });
+        }
+        const duplicateFilter = userId
+            ? { userId }
+            : { email: String(email).toLowerCase().trim() };
+        const existingBorrower = await models_1.Borrower.findOne(duplicateFilter);
+        if (existingBorrower) {
+            return res.status(400).json({ error: "Borrower profile already exists" });
+        }
         const borrower = await models_1.Borrower.create({
             userId,
+            name,
+            email,
             phone,
             address
         });

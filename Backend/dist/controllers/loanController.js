@@ -4,17 +4,36 @@ exports.getLoans = exports.createLoan = void 0;
 const models_1 = require("../models");
 const loanCalculator_1 = require("../utils/loanCalculator");
 const createLoan = async (req, res) => {
-    const { borrowerId, principal, interestRate, tenureMonths } = req.body;
-    const { emi, schedule } = (0, loanCalculator_1.generateSchedule)(principal, interestRate, tenureMonths);
-    const loan = await models_1.Loan.create({
-        borrowerId,
-        principal,
-        interestRate,
-        tenureMonths,
-        emi,
-        schedule
-    });
-    res.json(loan);
+    try {
+        const { borrowerId, principal, interestRate, tenureMonths } = req.body;
+        if (!borrowerId) {
+            return res.status(400).json({ error: "borrowerId is required" });
+        }
+        const parsedPrincipal = Number(principal);
+        const parsedInterestRate = Number(interestRate);
+        const parsedTenureMonths = Number(tenureMonths);
+        if (Number.isNaN(parsedPrincipal) ||
+            Number.isNaN(parsedInterestRate) ||
+            Number.isNaN(parsedTenureMonths) ||
+            parsedPrincipal <= 0 ||
+            parsedInterestRate < 0 ||
+            parsedTenureMonths <= 0) {
+            return res.status(400).json({ error: "Invalid loan input values" });
+        }
+        const { emi, schedule } = (0, loanCalculator_1.generateSchedule)(parsedPrincipal, parsedInterestRate, parsedTenureMonths);
+        const loan = await models_1.Loan.create({
+            borrowerId,
+            principal: parsedPrincipal,
+            interestRate: parsedInterestRate,
+            tenureMonths: parsedTenureMonths,
+            emi,
+            schedule
+        });
+        res.status(201).json(loan);
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 exports.createLoan = createLoan;
 const getLoans = async (_req, res) => {
@@ -22,15 +41,7 @@ const getLoans = async (_req, res) => {
         path: "borrowerId",
         populate: { path: "userId" }
     });
-    const formatted = loans.map((loan) => ({
-        id: loan._id,
-        borrower: loan.borrowerId?.userId?.name,
-        principal: loan.principal,
-        emi: loan.emi,
-        status: loan.status,
-        schedule: loan.schedule
-    }));
-    res.json(formatted);
+    res.json(loans);
 };
 exports.getLoans = getLoans;
 //# sourceMappingURL=loanController.js.map

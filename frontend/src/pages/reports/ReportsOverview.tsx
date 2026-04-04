@@ -10,6 +10,11 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 const ReportsOverview = () => {
   const [stats, setStats] = useState<any>(null);
 
+  const totalLoans = (stats?.loanStatus || []).reduce(
+    (sum: number, item: { value?: number }) => sum + Number(item?.value || 0),
+    0
+  );
+
   useEffect(() => {
     const fetchStats = async () => {
       const data = await getDashboardStats();
@@ -20,16 +25,16 @@ const ReportsOverview = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 dark:bg-gray-900 dark:text-white">
 
-      <h1 className="text-2xl font-bold">Reports Dashboard</h1>
+      <h1 className="text-2xl font-bold dark:text-white">Reports Dashboard</h1>
 
       {/* Cards */}
       <div className="grid grid-cols-4 gap-4">
 
-        <div className="p-4 border rounded">
-          <DollarSign />
-          <h3>₹{stats?.totalDisbursement?.toLocaleString()}</h3>
+        <div className="p-4 border rounded bg-white dark:bg-gray-800 dark:border-gray-700">
+          <DollarSign className="dark:text-gray-300" />
+          <h3 className="dark:text-white">₹{stats?.totalDisbursement?.toLocaleString()}</h3>
 
           {/* ✅ TrendingUp used */}
           <p className="text-xs text-green-600 flex items-center">
@@ -38,9 +43,9 @@ const ReportsOverview = () => {
           </p>
         </div>
 
-        <div className="p-4 border rounded">
-          <Users />
-          <h3>{stats?.activeBorrowers}</h3>
+        <div className="p-4 border rounded bg-white dark:bg-gray-800 dark:border-gray-700">
+          <Users className="dark:text-gray-300" />
+          <h3 className="dark:text-white">{stats?.activeBorrowers}</h3>
 
           <p className="text-xs text-green-600 flex items-center">
             <TrendingUp size={12} className="mr-1" />
@@ -48,14 +53,15 @@ const ReportsOverview = () => {
           </p>
         </div>
 
-        <div className="p-4 border rounded">
-          <AlertCircle />
-          <h3>--</h3>
+        <div className="p-4 border rounded bg-white dark:bg-gray-800 dark:border-gray-700">
+          <AlertCircle className="dark:text-gray-300" />
+          <h3 className="dark:text-white">{totalLoans}</h3>
+          <p className="text-xs text-gray-500">Total Loans</p>
         </div>
 
-        <div className="p-4 border rounded">
-          <DollarSign />
-          <h3>₹{stats?.totalSavings?.toLocaleString()}</h3>
+        <div className="p-4 border rounded bg-white dark:bg-gray-800 dark:border-gray-700">
+          <DollarSign className="dark:text-gray-300" />
+          <h3 className="dark:text-white">₹{stats?.totalSavings?.toLocaleString()}</h3>
         </div>
       </div>
 

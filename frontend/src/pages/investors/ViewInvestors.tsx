@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Eye, Edit, Plus, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import API from '../../lib/api/api';
 
 type Investor = {
@@ -12,6 +13,7 @@ type Investor = {
 };
 
 const ViewInvestors = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,19 +51,22 @@ const ViewInvestors = () => {
           </p>
         </div>
 
-        <button className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2">
+        <button
+          onClick={() => navigate('/investors/add')}
+          className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2"
+        >
           <Plus size={18} /> Add Investor
         </button>
       </div>
 
       {/* Search */}
-      <div className="bg-white p-4 border rounded flex items-center">
+      <div className="bg-white dark:bg-gray-800 p-4 border dark:border-gray-700 rounded flex items-center">
         <div className="relative w-96">
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
 
           <input
             placeholder="Search investor..."
-            className="w-full pl-10 pr-3 py-2 border rounded"
+            className="w-full pl-10 pr-3 py-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-700"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -69,7 +74,7 @@ const ViewInvestors = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded border overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded border dark:border-gray-700 overflow-hidden">
 
         {loading ? (
           <div className="p-6 text-center">Loading...</div>

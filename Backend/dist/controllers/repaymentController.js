@@ -30,12 +30,22 @@ exports.getRepayments = getRepayments;
 const bulkRepayment = async (req, res) => {
     try {
         const { entries } = req.body;
+        if (!Array.isArray(entries) || entries.length === 0) {
+            return res.status(400).json({ error: "entries must be a non-empty array" });
+        }
         const results = [];
+        const skipped = [];
         for (const entry of entries) {
-            const loan = await models_1.Loan.findById(entry.loanId);
-            if (!loan)
+            if (!entry?.loanId || Number(entry?.amount) <= 0) {
+                skipped.push({ loanId: entry?.loanId || null, reason: "Invalid loanId or amount" });
                 continue;
-            let remaining = entry.amount;
+            }
+            const loan = await models_1.Loan.findById(entry.loanId);
+            if (!loan) {
+                skipped.push({ loanId: entry.loanId, reason: "Loan not found" });
+                continue;
+            }
+            let remaining = Number(entry.amount);
             // 🔥 Apply payment to schedule
             for (const installment of loan.schedule) {
                 if (installment.status === "paid")
@@ -54,12 +64,15 @@ const bulkRepayment = async (req, res) => {
             // 💳 record transaction
             await models_1.Transaction.create({
                 loanId: loan._id,
-                amount: entry.amount,
+                amount: Number(entry.amount),
                 status: "success"
             });
-            results.push({ loanId: loan._id, paid: entry.amount });
+            results.push({ loanId: loan._id, paid: Number(entry.amount) });
         }
-        res.json({ success: true, results });
+        if (results.length === 0) {
+            return res.status(400).json({ error: "No valid repayment entries were processed", skipped });
+        }
+        res.json({ success: true, results, skipped });
     }
     catch (err) {
         res.status(500).json({ error: err.message });

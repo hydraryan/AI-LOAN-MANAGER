@@ -12,7 +12,7 @@ interface BulkEntry {
 
 const AddBulkRepayment = () => {
   const [entries, setEntries] = useState<BulkEntry[]>([
-    { id: 1, loanId: '', amount: 0, date: new Date().toISOString().split('T')[0], method: 'Cash' }
+    { id: 1, loanId: '', amount: 0, date: new Date().toISOString().split('T')[0], method: '' }
   ]);
 
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,7 @@ const AddBulkRepayment = () => {
   const addRow = () => {
     setEntries([
       ...entries,
-      { id: Date.now(), loanId: '', amount: 0, date: new Date().toISOString().split('T')[0], method: 'Cash' }
+      { id: Date.now(), loanId: '', amount: 0, date: new Date().toISOString().split('T')[0], method: '' }
     ]);
   };
 
@@ -36,7 +36,7 @@ const AddBulkRepayment = () => {
     try {
       setLoading(true);
 
-      const validEntries = entries.filter(e => e.loanId && e.amount > 0);
+      const validEntries = entries.filter(e => e.loanId && e.amount > 0 && e.method);
 
       if (validEntries.length === 0) {
         alert("Enter valid entries");
@@ -48,12 +48,12 @@ const AddBulkRepayment = () => {
       alert("Payments processed successfully");
 
       setEntries([
-        { id: 1, loanId: '', amount: 0, date: new Date().toISOString().split('T')[0], method: 'Cash' }
+        { id: 1, loanId: '', amount: 0, date: new Date().toISOString().split('T')[0], method: '' }
       ]);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error processing payments");
+      alert(err.response?.data?.error || "Error processing payments");
     } finally {
       setLoading(false);
     }
@@ -65,8 +65,8 @@ const AddBulkRepayment = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Bulk Repayments</h1>
-          <p className="text-sm text-gray-500">Enter multiple repayments</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bulk Repayments</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Enter multiple repayments</p>
         </div>
 
         <div className="flex gap-3">
@@ -86,49 +86,54 @@ const AddBulkRepayment = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border dark:border-gray-700 overflow-hidden">
         <table className="min-w-full">
-          <thead>
+          <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th>Loan ID</th>
-              <th>Amount</th>
-              <th>Date</th>
-              <th>Method</th>
+              <th className="px-4 py-2 text-left text-gray-900 dark:text-white font-semibold">Loan ID</th>
+              <th className="px-4 py-2 text-left text-gray-900 dark:text-white font-semibold">Amount</th>
+              <th className="px-4 py-2 text-left text-gray-900 dark:text-white font-semibold">Date</th>
+              <th className="px-4 py-2 text-left text-gray-900 dark:text-white font-semibold">Method</th>
               <th></th>
             </tr>
           </thead>
 
           <tbody>
             {entries.map(entry => (
-              <tr key={entry.id}>
-                <td>
+              <tr key={entry.id} className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td className="px-4 py-2">
                   <input
                     value={entry.loanId}
                     onChange={(e) => handleChange(entry.id, 'loanId', e.target.value)}
+                    className="w-full border dark:border-gray-700 px-3 py-2 rounded dark:bg-gray-900 dark:text-white dark:placeholder-gray-500"
                   />
                 </td>
 
-                <td>
+                <td className="px-4 py-2">
                   <input
                     type="number"
                     value={entry.amount}
                     onChange={(e) => handleChange(entry.id, 'amount', Number(e.target.value))}
+                    className="w-full border dark:border-gray-700 px-3 py-2 rounded dark:bg-gray-900 dark:text-white dark:placeholder-gray-500"
                   />
                 </td>
 
-                <td>
+                <td className="px-4 py-2">
                   <input
                     type="date"
                     value={entry.date}
                     onChange={(e) => handleChange(entry.id, 'date', e.target.value)}
+                    className="w-full border dark:border-gray-700 px-3 py-2 rounded dark:bg-gray-900 dark:text-white"
                   />
                 </td>
 
-                <td>
+                <td className="px-4 py-2">
                   <select
                     value={entry.method}
                     onChange={(e) => handleChange(entry.id, 'method', e.target.value)}
+                    className="w-full border dark:border-gray-700 px-3 py-2 rounded dark:bg-gray-900 dark:text-white"
                   >
+                    <option value="">Select Method</option>
                     <option>Cash</option>
                     <option>Bank Transfer</option>
                     <option>Mobile Money</option>
@@ -136,8 +141,8 @@ const AddBulkRepayment = () => {
                   </select>
                 </td>
 
-                <td>
-                  <button onClick={() => removeRow(entry.id)}>
+                <td className="px-4 py-2">
+                  <button onClick={() => removeRow(entry.id)} className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400">
                     <Trash2 size={18} />
                   </button>
                 </td>
@@ -146,7 +151,7 @@ const AddBulkRepayment = () => {
           </tbody>
         </table>
 
-        <button onClick={addRow} className="p-4 flex items-center gap-2 text-blue-600">
+        <button onClick={addRow} className="px-4 py-2 flex items-center gap-2 text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:text-blue-700 border-t dark:border-gray-700">
           <Plus size={18} /> Add Row
         </button>
       </div>

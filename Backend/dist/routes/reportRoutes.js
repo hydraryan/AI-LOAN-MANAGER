@@ -8,5 +8,6 @@ const reportController_1 = require("../controllers/reportController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = express_1.default.Router();
 router.get("/dashboard", authMiddleware_1.authMiddleware, reportController_1.getDashboardStats);
+router.get("/home", authMiddleware_1.authMiddleware, reportController_1.getHomeDashboardMetrics);
 exports.default = router;
 //# sourceMappingURL=reportRoutes.js.map

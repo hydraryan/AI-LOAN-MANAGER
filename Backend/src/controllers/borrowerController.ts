@@ -4,10 +4,25 @@ import { Borrower } from "../models";
 // ✅ CREATE BORROWER
 export const createBorrower = async (req: Request, res: Response) => {
   try {
-    const { userId, phone, address } = req.body;
+    const { userId, name, email, phone, address } = req.body;
+
+    if (!userId && (!name || !email)) {
+      return res.status(400).json({ error: "Either userId or both name and email are required" });
+    }
+
+    const duplicateFilter = userId
+      ? { userId }
+      : { email: String(email).toLowerCase().trim() };
+
+    const existingBorrower = await Borrower.findOne(duplicateFilter);
+    if (existingBorrower) {
+      return res.status(400).json({ error: "Borrower profile already exists" });
+    }
 
     const borrower = await Borrower.create({
       userId,
+      name,
+      email,
       phone,
       address
     });

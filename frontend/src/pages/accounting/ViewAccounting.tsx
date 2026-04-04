@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import API from '../../lib/api/api';
 
 type Account = {
@@ -11,6 +12,7 @@ type Account = {
 };
 
 const ViewAccounting = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,13 +48,16 @@ const ViewAccounting = () => {
           <p className="text-sm text-gray-500">Manage general ledger accounts</p>
         </div>
 
-        <button className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2">
+        <button
+          onClick={() => navigate('/accounting/add')}
+          className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2"
+        >
           <Plus size={18} /> Add Account
         </button>
       </div>
 
       {/* Search */}
-      <div className="bg-white p-4 border rounded flex justify-between">
+      <div className="bg-white dark:bg-gray-800 p-4 border dark:border-gray-700 rounded flex justify-between">
 
         <div className="relative w-96">
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
@@ -61,7 +66,7 @@ const ViewAccounting = () => {
             placeholder="Search account..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 border rounded"
+            className="w-full pl-10 pr-3 py-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-700"
           />
         </div>
 
@@ -72,7 +77,7 @@ const ViewAccounting = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded border overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded border dark:border-gray-700 overflow-hidden">
 
         {loading ? (
           <div className="p-6 text-center">Loading...</div>

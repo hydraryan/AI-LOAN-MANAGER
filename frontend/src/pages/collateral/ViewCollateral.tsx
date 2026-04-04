@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Eye, Plus, Search, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import API from '../../lib/api/api';
 
 type Collateral = {
@@ -7,8 +8,9 @@ type Collateral = {
   type: string;
   productName: string;
   borrowerId: {
-    userId: {
-      name: string;
+    name?: string;
+    userId?: {
+      name?: string;
     };
   };
   value: number;
@@ -18,6 +20,7 @@ type Collateral = {
 };
 
 const ViewCollateral = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [data, setData] = useState<Collateral[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +43,7 @@ const ViewCollateral = () => {
 
   const filtered = data.filter(c =>
     c.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.borrowerId?.userId?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (c.borrowerId?.userId?.name || c.borrowerId?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
@@ -68,31 +71,34 @@ const ViewCollateral = () => {
           </p>
         </div>
 
-        <button className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2">
+        <button
+          onClick={() => navigate('/collateral/add')}
+          className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2"
+        >
           <Plus size={18} /> Add Collateral
         </button>
       </div>
 
       {/* Search */}
-      <div className="bg-white p-4 border rounded flex justify-between">
+      <div className="bg-white dark:bg-gray-800 p-4 border dark:border-gray-700 rounded flex justify-between">
         <div className="relative w-96">
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
 
           <input
             placeholder="Search..."
-            className="pl-10 pr-3 py-2 border rounded w-full"
+            className="pl-10 pr-3 py-2 border rounded w-full dark:bg-gray-900 dark:text-white dark:border-gray-700"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <button className="flex items-center gap-2 border px-3 py-2 rounded">
+        <button className="flex items-center gap-2 border px-3 py-2 rounded dark:border-gray-700 dark:text-white hover:dark:bg-gray-700">
           <Filter size={16} /> Filter
         </button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded border overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded border dark:border-gray-700 overflow-hidden">
 
         {loading ? (
           <div className="p-6 text-center">Loading...</div>
@@ -119,7 +125,7 @@ const ViewCollateral = () => {
                   <td>{item.type}</td>
 
                   <td className="text-blue-600">
-                    {item.borrowerId?.userId?.name}
+                    {item.borrowerId?.userId?.name || item.borrowerId?.name || 'Unknown'}
                   </td>
 
                   <td className="font-mono">{item.serialNumber}</td>

@@ -29,14 +29,27 @@ export const bulkRepayment = async (req: Request, res: Response) => {
   try {
     const { entries } = req.body;
 
+    if (!Array.isArray(entries) || entries.length === 0) {
+      return res.status(400).json({ error: "entries must be a non-empty array" });
+    }
+
     const results = [];
+    const skipped = [];
 
     for (const entry of entries) {
+      if (!entry?.loanId || Number(entry?.amount) <= 0) {
+        skipped.push({ loanId: entry?.loanId || null, reason: "Invalid loanId or amount" });
+        continue;
+      }
+
       const loan = await Loan.findById(entry.loanId);
 
-      if (!loan) continue;
+      if (!loan) {
+        skipped.push({ loanId: entry.loanId, reason: "Loan not found" });
+        continue;
+      }
 
-      let remaining = entry.amount;
+      let remaining = Number(entry.amount);
 
       // 🔥 Apply payment to schedule
       for (const installment of loan.schedule) {
@@ -61,14 +74,18 @@ export const bulkRepayment = async (req: Request, res: Response) => {
       // 💳 record transaction
       await Transaction.create({
         loanId: loan._id,
-        amount: entry.amount,
+        amount: Number(entry.amount),
         status: "success"
       });
 
-      results.push({ loanId: loan._id, paid: entry.amount });
+      results.push({ loanId: loan._id, paid: Number(entry.amount) });
     }
 
-    res.json({ success: true, results });
+    if (results.length === 0) {
+      return res.status(400).json({ error: "No valid repayment entries were processed", skipped });
+    }
+
+    res.json({ success: true, results, skipped });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

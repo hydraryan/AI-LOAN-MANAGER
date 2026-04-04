@@ -43,8 +43,12 @@ const AddLoan = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await API.get<Borrower[]>('/borrowers');
-        setBorrowers(res.data);
+        const res = await API.get('/borrowers');
+        const list = res.data.map((b: any) => ({
+          id: b._id,
+          name: b.userId?.name || b.name || 'Unknown'
+        }));
+        setBorrowers(list);
       } catch (err) {
         console.error(err);
       }
@@ -84,9 +88,9 @@ const AddLoan = () => {
 
       alert('Loan created');
       navigate('/loans/view');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Error creating loan');
+      alert(err.response?.data?.error || 'Error creating loan');
     }
   };
 
@@ -99,7 +103,7 @@ const AddLoan = () => {
             name="borrowerId"
             value={formData.borrowerId}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className="w-full border dark:border-gray-700 px-3 py-2 rounded dark:bg-gray-900 dark:text-white"
           >
             <option value="">Select borrower</option>
             {borrowers.map(b => (
@@ -119,7 +123,7 @@ const AddLoan = () => {
               type="number"
               value={formData.amount}
               onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
+              className="w-full border dark:border-gray-700 px-3 py-2 rounded dark:bg-gray-900 dark:text-white dark:placeholder-gray-500"
             />
 
             <input
@@ -128,7 +132,7 @@ const AddLoan = () => {
               type="number"
               value={formData.interestRate}
               onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
+              className="w-full border dark:border-gray-700 px-3 py-2 rounded dark:bg-gray-900 dark:text-white dark:placeholder-gray-500"
             />
 
             <input
@@ -137,7 +141,7 @@ const AddLoan = () => {
               type="number"
               value={formData.duration}
               onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
+              className="w-full border dark:border-gray-700 px-3 py-2 rounded dark:bg-gray-900 dark:text-white dark:placeholder-gray-500"
             />
           </div>
         );
@@ -189,13 +193,13 @@ const AddLoan = () => {
             >
               <step.icon size={16} />
             </div>
-            <span className="text-xs">{step.title}</span>
+            <span className="text-xs text-gray-700 dark:text-gray-300">{step.title}</span>
           </div>
         ))}
       </div>
 
       {/* Content */}
-      <div className="border p-6 rounded">{renderStep()}</div>
+      <div className="border dark:border-gray-700 p-6 rounded dark:bg-gray-800">{renderStep()}</div>
 
       {/* Actions */}
       <div className="flex justify-between">

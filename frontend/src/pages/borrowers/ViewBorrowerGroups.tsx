@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, Edit, Trash2, Search, Users } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../lib/api/api';
 
@@ -9,8 +9,9 @@ type Group = {
   description: string;
   members: any[];
   leaderId?: {
+    name?: string;
     userId?: {
-      name: string;
+      name?: string;
     };
   };
   createdAt: string;
@@ -42,7 +43,7 @@ const ViewBorrowerGroups = () => {
   // 🔥 FILTER
   const filteredGroups = groups.filter(g =>
     g.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    g.leaderId?.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    (g.leaderId?.userId?.name || g.leaderId?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -66,7 +67,7 @@ const ViewBorrowerGroups = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white p-4 border rounded">
+      <div className="bg-white dark:bg-gray-800 p-4 border dark:border-gray-700 rounded">
         <div className="relative w-96">
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
 
@@ -74,79 +75,46 @@ const ViewBorrowerGroups = () => {
             placeholder="Search groups..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 border rounded"
+            className="w-full pl-10 pr-3 py-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-700"
           />
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded border overflow-hidden">
-
+      <div className="rounded-xl shadow-lg border dark:border-gray-700 bg-white dark:bg-gray-800 overflow-x-auto animate-fadein">
         {loading ? (
-          <div className="p-6 text-center">Loading...</div>
+          <div className="p-6 text-center text-gray-400 dark:text-gray-500">Loading...</div>
+        ) : filteredGroups.length === 0 ? (
+          <div className="p-8 text-center text-gray-400 dark:text-gray-500 flex flex-col items-center">
+            <Users className="w-10 h-10 mb-2 text-gray-300 dark:text-gray-600" />
+            No groups found
+          </div>
         ) : (
-          <table className="min-w-full">
-
-            <thead>
+          <table className="min-w-full text-sm text-left">
+            <thead className="bg-gray-50 dark:bg-gray-900/60">
               <tr>
-                <th>Group</th>
-                <th>Leader</th>
-                <th>Members</th>
-                <th>Created</th>
-                <th></th>
+                <th className="px-6 py-3 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Group</th>
+                <th className="px-6 py-3 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Leader</th>
+                <th className="px-6 py-3 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Members</th>
+                <th className="px-6 py-3 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Created</th>
+                <th className="px-6 py-3"></th>
               </tr>
             </thead>
-
             <tbody>
-              {filteredGroups.map(group => (
-                <tr key={group._id}>
-
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="bg-purple-100 p-2 rounded">
-                        <Users size={18} />
-                      </div>
-
-                      <div>
-                        <div className="font-medium">{group.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {group.description}
-                        </div>
-                      </div>
-                    </div>
+              {filteredGroups.map((g) => (
+                <tr key={g._id} className="transition-colors duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                  <td className="px-6 py-4 font-medium">{g.name}</td>
+                  <td className="px-6 py-4">{g.leaderId?.userId?.name || g.leaderId?.name || '-'}</td>
+                  <td className="px-6 py-4">{g.members.length}</td>
+                  <td className="px-6 py-4 text-xxs text-gray-500 dark:text-gray-400">{new Date(g.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                    <button className="text-blue-600 hover:underline">Edit</button>
+                    <button className="text-red-500 hover:underline">Delete</button>
                   </td>
-
-                  <td>
-                    {group.leaderId?.userId?.name || 'N/A'}
-                  </td>
-
-                  <td>
-                    <span className="text-blue-600">
-                      {group.members?.length || 0} Members
-                    </span>
-                  </td>
-
-                  <td>
-                    {new Date(group.createdAt).toLocaleDateString()}
-                  </td>
-
-                  <td className="flex gap-2 justify-end">
-                    <Eye size={18} className="cursor-pointer text-blue-600" />
-                    <Edit size={18} className="cursor-pointer text-green-600" />
-                    <Trash2 size={18} className="cursor-pointer text-red-600" />
-                  </td>
-
                 </tr>
               ))}
             </tbody>
-
           </table>
-        )}
-
-        {!loading && filteredGroups.length === 0 && (
-          <div className="p-6 text-center text-gray-500">
-            No groups found
-          </div>
         )}
       </div>
 

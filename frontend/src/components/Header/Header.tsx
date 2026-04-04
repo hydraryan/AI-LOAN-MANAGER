@@ -1,6 +1,8 @@
 import { Bell, Sun, Moon, Home, BookOpen, Menu, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { logout } from '../../lib/api/auth';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -8,8 +10,19 @@ interface HeaderProps {
 
 const Header = ({ toggleSidebar }: HeaderProps) => {
   const { setTheme, theme } = useTheme();
+  const navigate = useNavigate();
   const [date, setDate] = useState(new Date());
   const [weather, setWeather] = useState<{ temp: number | null, city: string }>({ temp: null, city: 'Loading...' });
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      navigate('/login', { replace: true });
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setDate(new Date()), 60000);
@@ -98,7 +111,9 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
             <Bell className="w-5 h-5 cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors" />
             <BookOpen className="w-5 h-5 cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors" />
             <div className="h-5 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
-            <LogOut className="w-5 h-5 cursor-pointer hover:text-rose-600 dark:hover:text-rose-400 transition-colors" />
+            <button onClick={handleLogout} aria-label="Logout" title="Logout">
+              <LogOut className="w-5 h-5 cursor-pointer hover:text-rose-600 dark:hover:text-rose-400 transition-colors" />
+            </button>
         </div>
       </div>
     </header>

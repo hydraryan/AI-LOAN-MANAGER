@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Eye, Plus, Search, Filter } from 'lucide-react';
 import { getSavingsAccounts } from '../../lib/api/savings';
 
@@ -13,6 +14,7 @@ interface SavingsAccount {
 }
 
 const ViewSavings = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [accounts, setAccounts] = useState<SavingsAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,10 @@ const ViewSavings = () => {
           </p>
         </div>
 
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium flex items-center gap-2">
+        <button
+          onClick={() => navigate('/savings/add')}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium flex items-center gap-2"
+        >
           <Plus size={18} /> Add Account
         </button>
       </div>

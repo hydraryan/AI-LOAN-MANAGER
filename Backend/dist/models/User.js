@@ -46,8 +46,8 @@ const userSchema = new mongoose_1.Schema({
     passwordHash: { type: String, required: true },
     role: {
         type: String,
-        enum: ["admin", "officer", "borrower"],
-        default: "borrower"
+        enum: ["admin"],
+        default: "admin"
     }
 }, { timestamps: true });
 exports.default = mongoose_1.default.model("User", userSchema);

@@ -7,8 +7,9 @@ import PageHeader from '../../components/Shared/PageHeader';
 type Loan = {
   _id: string;
   borrowerId: {
-    userId: {
-      name: string;
+    name?: string;
+    userId?: {
+      name?: string;
     };
   };
   principal: number;
@@ -48,7 +49,7 @@ const ViewLoans = () => {
 
   // 🔥 FILTER LOGIC
   const filteredLoans = loans.filter((loan) => {
-    const name = loan.borrowerId?.userId?.name || '';
+    const name = loan.borrowerId?.userId?.name || loan.borrowerId?.name || '';
 
     const matchesSearch =
       name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -98,7 +99,7 @@ const ViewLoans = () => {
       />
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded border flex flex-col md:flex-row gap-4 justify-between">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded border dark:border-gray-700 flex flex-col md:flex-row gap-4 justify-between">
 
         <div className="flex gap-4 flex-1">
 
@@ -106,7 +107,7 @@ const ViewLoans = () => {
             <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
             <input
               placeholder="Search..."
-              className="pl-10 pr-3 py-2 border rounded w-full"
+              className="pl-10 pr-3 py-2 border rounded w-full dark:bg-gray-900 dark:text-white dark:border-gray-700"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -115,7 +116,7 @@ const ViewLoans = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="border px-3 py-2 rounded"
+            className="border px-3 py-2 rounded dark:bg-gray-900 dark:text-white dark:border-gray-700"
           >
             <option>All</option>
             <option>approved</option>
@@ -125,29 +126,29 @@ const ViewLoans = () => {
         </div>
 
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 border px-3 py-2 rounded">
+          <button className="flex items-center gap-2 border px-3 py-2 rounded dark:border-gray-700 dark:text-white hover:dark:bg-gray-700">
             <Filter size={16} /> Filter
           </button>
 
-          <button className="flex items-center gap-2 border px-3 py-2 rounded">
+          <button className="flex items-center gap-2 border px-3 py-2 rounded dark:border-gray-700 dark:text-white hover:dark:bg-gray-700">
             <Download size={16} /> Export
           </button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded border overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded border dark:border-gray-700 overflow-hidden">
 
         {loading ? (
-          <div className="p-6 text-center">Loading...</div>
+          <div className="p-6 text-center dark:text-white">Loading...</div>
         ) : (
           <table className="min-w-full">
-            <thead>
+            <thead className="bg-gray-50 dark:bg-gray-900/50">
               <tr>
-                <th>ID</th>
-                <th>Borrower</th>
-                <th>Amount</th>
-                <th>Status</th>
+                <th className="dark:text-white">ID</th>
+                <th className="dark:text-white">Borrower</th>
+                <th className="dark:text-white">Amount</th>
+                <th className="dark:text-white">Status</th>
                 <th>Created</th>
                 <th>Next Payment</th>
                 <th></th>
@@ -161,7 +162,7 @@ const ViewLoans = () => {
                   <td className="text-blue-600">{loan._id}</td>
 
                   <td>
-                    {loan.borrowerId?.userId?.name || 'Unknown'}
+                    {loan.borrowerId?.userId?.name || loan.borrowerId?.name || 'Unknown'}
                   </td>
 
                   <td>
