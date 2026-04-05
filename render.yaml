@@ -4,8 +4,8 @@ services:
     runtime: node
     rootDir: Backend
     plan: free
-  buildCommand: npm ci --include=dev && npm run build
-  startCommand: npm start
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
     healthCheckPath: /
 
     envVars:
