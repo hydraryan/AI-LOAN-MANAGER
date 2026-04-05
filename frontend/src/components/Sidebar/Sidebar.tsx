@@ -4,11 +4,12 @@ import {
   X, LayoutDashboard, Users, 
   BarChart3, Settings, Search,
   Scale, Banknote, ScrollText, Calendar, FileText,
-  ArrowLeftRight, Briefcase, Wallet
+  ArrowLeftRight, Briefcase
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getSession } from '../../lib/api/auth';
 
 
 interface SubMenuItem {
@@ -37,9 +38,6 @@ const menuItems: MenuItem[] = [
           { title: 'Add Borrower', path: '/borrowers/add' },
           { title: 'Borrower Groups', path: '/borrowers/groups' },
           { title: 'Add Borrowers Group', path: '/borrowers/groups/add' },
-          { title: 'Send SMS to All', path: '/borrowers/sms' },
-          { title: 'Send Email to All', path: '/borrowers/email' },
-          { title: 'Invite Borrowers', path: '/borrowers/invite' },
       ]
   },
   {
@@ -76,7 +74,10 @@ const menuItems: MenuItem[] = [
   {
       title: 'Collateral Register',
       icon: ScrollText,
-      path: '/collateral/register'
+      submenu: [
+        { title: 'View Collateral', path: '/collateral/view' },
+        { title: 'Add Collateral', path: '/collateral/add' }
+      ]
   },
   {
       title: 'Calendar',
@@ -102,9 +103,7 @@ const menuItems: MenuItem[] = [
          { title: 'Add Savings Account', path: '/savings/add' },
          { title: 'View Term Deposits', path: '/savings/term-deposits' },
          { title: 'Add Term Deposit', path: '/savings/term-deposits/add' },
-         { title: 'Savings Charts', path: '/savings/charts' },
          { title: 'Savings Report', path: '/savings/report' },
-         { title: 'Savings Products Report', path: '/savings/products-report' },
          { title: 'Savings Fee Report', path: '/savings/fee-report' },
          { title: 'Cash Safe Management', path: '/savings/cash-safe' },
      ]
@@ -126,52 +125,25 @@ const menuItems: MenuItem[] = [
      submenu: [
          { title: 'View Investors', path: '/investors/view' },
          { title: 'Add Investor', path: '/investors/add' },
-         { title: 'Invite Investors', path: '/investors/invite' },
-         { title: 'Send SMS to All', path: '/investors/sms' },
-         { title: 'Send Email to All', path: '/investors/email' },
+       { title: 'Add Transaction', path: '/investors/add-transaction' },
      ]
-  },
-  {
-      title: 'Investor Accounts',
-      icon: Wallet,
-      submenu: [
-          { title: 'View All Investor Accounts', path: '/investor-accounts/view' },
-          { title: 'Add Investor Account', path: '/investor-accounts/add' },
-          { title: 'View Loan Investments', path: '/investor-accounts/investments' },
-          { title: 'View Investor Transactions', path: '/investor-accounts/transactions' },
-          { title: 'Approve Loan Investments', path: '/investor-accounts/approve' },
-      ]
   },
   {
      title: 'Reports',
      icon: BarChart3,
      submenu: [
-          { title: 'Borrowers Report', path: '/reports/borrowers' },
+         { title: 'Lending Overview', path: '/reports/overview' },
           { title: 'Loan Report', path: '/reports/loans' },
-          { title: 'Loan Arrears Aging', path: '/reports/arrears-aging' },
           { title: 'Collections Report', path: '/reports/collections' },
-          { title: 'Collector Report', path: '/reports/collector' },
-          { title: 'Deferred Income', path: '/reports/deferred-income' },
-          { title: 'Pro-Rata Collections', path: '/reports/pro-rata' },
-          { title: 'Disbursement Report', path: '/reports/disbursement' },
-          { title: 'Fees Report', path: '/reports/fees' },
-          { title: 'Loan Officer Report', path: '/reports/loan-officer' },
-          { title: 'Loan Products Report', path: '/reports/loan-products' },
-          { title: 'MFRS Ratios', path: '/reports/mfrs-ratios' },
-          { title: 'Daily Report', path: '/reports/daily' },
-          { title: 'Monthly Report', path: '/reports/monthly' },
-          { title: 'Outstanding Report', path: '/reports/outstanding' },
           { title: 'Portfolio at Risk (PAR)', path: '/reports/par' },
-          { title: 'At-a-Glance Report', path: '/reports/at-a-glance' },
-          { title: 'Fully Paid Loans', path: '/reports/fully-paid' },
-          { title: 'Defaulted Loans', path: '/reports/defaulted' },
-          { title: 'All Entries', path: '/reports/all-entries' },
+         { title: 'Savings Report', path: '/reports/savings' },
+         { title: 'Savings Fee Report', path: '/reports/savings-fees' },
      ]
   },
   {
     title: 'Account',
     icon: Settings,
-    path: '/users'
+    path: '/account/settings'
   },
 ];
 
@@ -214,7 +186,26 @@ const Sidebar = ({ isOpen, toggleSidebar }: SidebarProps) => {
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [hoveredItem, setHoveredItem] = useState<{ item: MenuItem; top: number; bottom: number; windowHeight: number } | null>(null);
+  const [userInfo, setUserInfo] = useState<{ name: string; email: string }>({ name: 'Admin', email: '' });
+  const [avatarError, setAvatarError] = useState(false);
   const hoverTimeoutRef = React.useRef<any>(null);
+
+  useEffect(() => {
+    const loadSession = async () => {
+      try {
+        const res = await getSession();
+        const user = res?.data?.user;
+        setUserInfo({
+          name: user?.name || 'Admin',
+          email: user?.email || ''
+        });
+      } catch (error) {
+        console.error('Failed to load session in sidebar:', error);
+      }
+    };
+
+    loadSession();
+  }, []);
 
   const toggleSubmenu = (title: string) => {
     setExpandedMenus(prev => 
@@ -466,7 +457,18 @@ const Sidebar = ({ isOpen, toggleSidebar }: SidebarProps) => {
             )}>
                 <div className="relative">
                     <div className="h-10 w-10 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden border-2 border-white dark:border-gray-600 shadow-sm cursor-pointer hover:border-slate-300 dark:hover:border-gray-500 transition-colors">
-                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="Profile" className="h-full w-full object-cover" />
+                        {!avatarError ? (
+                          <img
+                            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                            alt="Profile"
+                            className="h-full w-full object-cover"
+                            onError={() => setAvatarError(true)}
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
+                            {userInfo.name.slice(0, 1).toUpperCase() || 'A'}
+                          </div>
+                        )}
                     </div>
                      {/* Online Status Indicator */}
                     <div className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-800"></div>
@@ -476,8 +478,8 @@ const Sidebar = ({ isOpen, toggleSidebar }: SidebarProps) => {
                     "flex flex-col text-left transition-opacity duration-200",
                     !isOpen && "lg:hidden opacity-0 w-0 overflow-hidden"
                 )}>
-                    <span className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">Aryan Rajput</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">E19593</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">{userInfo.name}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{userInfo.email ? userInfo.email.slice(0, 6) : ''}</span>
                 </div>
             </div>
         </div>

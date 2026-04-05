@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const rawApiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "/api").trim();
+const apiBaseUrl = rawApiBaseUrl.replace(/\/+$/, "") || "/api";
+
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: apiBaseUrl,
   withCredentials: true
 });
 
@@ -27,7 +30,8 @@ API.interceptors.response.use(
         return API(retryableRequest);
       } catch {
         if (window.location.pathname !== "/login") {
-          window.location.href = "/login?session=expired";
+          const next = `${window.location.pathname}${window.location.search}`;
+          window.location.href = `/login?session=expired&reason=refresh-failed&next=${encodeURIComponent(next)}`;
         }
       }
     }

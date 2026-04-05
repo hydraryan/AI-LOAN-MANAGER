@@ -1,1 +1,0 @@
-{"version":3,"file":"savingsRoutes.js","sourceRoot":"","sources":["../../src/routes/savingsRoutes.ts"],"names":[],"mappings":";;;;;AAAA,sDAA8B;AAC9B,wEAA6E;AAC7E,iEAA8D;AAE9D,MAAM,MAAM,GAAG,iBAAO,CAAC,MAAM,EAAE,CAAC;AAEhC,MAAM,CAAC,IAAI,CAAC,GAAG,EAAE,+BAAc,EAAE,iCAAa,CAAC,CAAC;AAChD,MAAM,CAAC,GAAG,CAAC,GAAG,EAAE,+BAAc,EAAE,8BAAU,CAAC,CAAC;AAE5C,kBAAe,MAAM,CAAC"}

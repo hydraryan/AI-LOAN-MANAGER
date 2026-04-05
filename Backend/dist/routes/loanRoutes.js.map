@@ -1,1 +1,0 @@
-{"version":3,"file":"loanRoutes.js","sourceRoot":"","sources":["../../src/routes/loanRoutes.ts"],"names":[],"mappings":";;;;;AAAA,sDAA8B;AAC9B,kEAAqE;AACrE,iEAA8D;AAE9D,MAAM,MAAM,GAAG,iBAAO,CAAC,MAAM,EAAE,CAAC;AAEhC,MAAM,CAAC,IAAI,CAAC,GAAG,EAAE,+BAAc,EAAE,2BAAU,CAAC,CAAC;AAC7C,MAAM,CAAC,GAAG,CAAC,GAAG,EAAE,+BAAc,EAAE,yBAAQ,CAAC,CAAC;AAE1C,kBAAe,MAAM,CAAC"}

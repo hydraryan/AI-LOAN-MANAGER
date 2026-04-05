@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { env } from "../config/env";
 
-const ACCESS_COOKIE_NAME = process.env.ACCESS_COOKIE_NAME || "lm_access";
+const ACCESS_COOKIE_NAME = env.ACCESS_COOKIE_NAME;
 
 export const authMiddleware = (
   req: any,
@@ -17,7 +18,7 @@ export const authMiddleware = (
       return res.status(401).json({ success: false, message: "No token provided" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    const decoded = jwt.verify(token, env.JWT_SECRET);
     req.user = decoded;
 
     next();
@@ -28,4 +29,14 @@ export const authMiddleware = (
 
     res.status(401).json({ success: false, message: "Unauthorized" });
   }
+};
+
+export const requireRole = (allowedRoles: string[]) => {
+  return (req: any, res: Response, next: NextFunction) => {
+    const userRole = String(req.user?.role || "").trim();
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+    next();
+  };
 };

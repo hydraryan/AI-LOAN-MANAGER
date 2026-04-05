@@ -38,3 +38,64 @@ export interface Repayment {
     method: 'Cash' | 'Bank Transfer' | 'M-Pesa' | 'UPI' | 'GPay';
     status: 'Pending' | 'Approved';
 }
+
+export interface Investor {
+    _id: string;
+    name: string;
+    email: string;
+    investorType: 'Individual' | 'Corporate' | 'Bank' | 'MutualFund';
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    accountNumber?: string;
+    accountHolderName?: string;
+    ifscCode?: string;
+    kycStatus: 'Pending' | 'Verified' | 'Rejected';
+    status: 'Active' | 'Inactive' | 'Suspended';
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface InvestorAccount {
+    _id: string;
+    investorId: string;
+    accountNumber: string;
+    accountType: 'savings' | 'checking' | 'investment' | 'other';
+    bank: string;
+    balance: number;
+    currency: string;
+    status: 'active' | 'inactive' | 'suspended';
+    notes?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    investorDetails?: Investor;
+}
+
+export interface Investment {
+    _id: string;
+    investorId: string;
+    loanId: string;
+    amount: number;
+    interestRate: number;
+    investmentDate: string;
+    expectedReturnDate: string;
+    status: 'pending' | 'active' | 'completed' | 'defaulted';
+    totalReturned: number;
+    notes?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    investorDetails?: Investor;
+    loanDetails?: any;
+}
+
+export interface PaginatedResponse<T> {
+    data: T[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        pages: number;
+    };
+}

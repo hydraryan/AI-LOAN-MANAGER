@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import API from "../lib/api/api";
 
 type Theme = "dark" | "light" | "system";
 
@@ -30,6 +31,23 @@ export function ThemeProvider({
   );
 
   useEffect(() => {
+    const syncThemeFromPreferences = async () => {
+      try {
+        const res = await API.get("/settings/preferences");
+        const serverTheme = String(res?.data?.theme || "").toLowerCase();
+        if (serverTheme === "light" || serverTheme === "dark" || serverTheme === "system") {
+          localStorage.setItem(storageKey, serverTheme);
+          setTheme(serverTheme as Theme);
+        }
+      } catch {
+        // Ignore when unauthenticated or when settings endpoint is unavailable.
+      }
+    };
+
+    syncThemeFromPreferences();
+  }, [storageKey]);
+
+  useEffect(() => {
     const root = window.document.documentElement;
 
     root.classList.remove("light", "dark");
@@ -56,7 +74,7 @@ export function ThemeProvider({
   };
 
   return (
-    <ThemeProviderContext.Provider value={value} {...props}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
     </ThemeProviderContext.Provider>
   );
@@ -70,5 +88,3 @@ export const useTheme = () => {
 
   return context;
 }
-
-const props = {};

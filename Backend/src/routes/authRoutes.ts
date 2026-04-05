@@ -5,7 +5,9 @@ import {
   refreshSession,
   logout,
   logoutAllSessions,
-  getSession
+  getSession,
+  getActiveSessions,
+  changePassword
 } from "../controllers/authController";
 import { authMiddleware } from "../middleware/authMiddleware";
 
@@ -13,7 +15,8 @@ const router = express.Router();
 
 const signinLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: 8,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many login attempts. Try again later." }
@@ -32,5 +35,7 @@ router.post("/refresh", refreshLimiter, refreshSession);
 router.post("/logout", logout);
 router.post("/logout-all", authMiddleware, logoutAllSessions);
 router.get("/session", authMiddleware, getSession);
+router.get("/sessions", authMiddleware, getActiveSessions);
+router.post("/change-password", authMiddleware, changePassword);
 
 export default router;

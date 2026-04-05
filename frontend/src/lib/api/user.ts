@@ -33,3 +33,21 @@ export const getUsers = async (): Promise<User[]> => {
     lastActive: u.updatedAt ? new Date(u.updatedAt).toLocaleString() : "-"
   }));
 };
+
+export const getUserById = async (id: string): Promise<UserResponse> => {
+  const res = await API.get<UserResponse>(`/users/${id}`);
+  return res.data;
+};
+
+export const updateUser = async (
+  id: string,
+  payload: { name: string; email: string; password?: string }
+) => {
+  const res = await API.put(`/users/${id}`, payload);
+  return res.data;
+};
+
+export const deleteUser = async (id: string) => {
+  const res = await API.delete(`/users/${id}`);
+  return res.data;
+};

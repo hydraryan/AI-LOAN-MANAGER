@@ -9,6 +9,8 @@ export interface IAuthSession extends Document {
   rotatedAt?: Date;
   revokedAt?: Date;
   lastSeenAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const authSessionSchema = new Schema<IAuthSession>(

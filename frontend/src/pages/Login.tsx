@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getSession, signin } from '../lib/api/auth';
-import { Lock, Mail, Loader2, AlertCircle, LogIn } from 'lucide-react';
+import { getAuthErrorMessage, getSession, signin } from '../lib/api/auth';
+import { Lock, Mail, Loader2, AlertCircle, LogIn, ShieldCheck } from 'lucide-react';
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [fieldErrors, setFieldErrors] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -27,111 +28,168 @@ const Login = () => {
 
     const search = new URLSearchParams(location.search);
     if (search.get('session') === 'expired') {
-      setError('Your session has expired. Please sign in again.');
+      setError('Session expired for security reasons. Sign in again to continue.');
     }
   }, [location.search, navigate]);
+
+  const validateForm = () => {
+    const nextErrors = { email: '', password: '' };
+    const email = formData.email.trim().toLowerCase();
+    const password = formData.password.trim();
+
+    if (!email) {
+      nextErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      nextErrors.email = 'Enter a valid email address';
+    }
+
+    if (!password) {
+      nextErrors.password = 'Password is required';
+    } else if (password.length < 8) {
+      nextErrors.password = 'Password must be at least 8 characters';
+    }
+
+    setFieldErrors(nextErrors);
+    return !nextErrors.email && !nextErrors.password;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!validateForm()) return;
+
     setLoading(true);
 
     try {
-      await signin({ email: formData.email, password: formData.password });
-      const from = (location.state as any)?.from?.pathname || '/';
+      const search = new URLSearchParams(location.search);
+      const nextFromQuery = search.get('next');
+      const fromState = (location.state as any)?.from?.pathname;
+      const from = nextFromQuery || fromState || '/';
+
+      await signin({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password
+      });
+
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        'Authentication failed. Check credentials.'
-      );
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-            <div className="h-12 w-12 rounded-xl bg-indigo-600 flex items-center justify-center">
-                <LogIn className="h-8 w-8 text-white" />
-            </div>
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-          Admin Login
-        </h2>
-      </div>
+    <div className="relative min-h-screen overflow-hidden bg-grainy-gradient px-4 py-10 sm:px-6 lg:px-8">
+      <div className="login-orb login-orb-left" />
+      <div className="login-orb login-orb-right" />
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10 border dark:border-gray-700">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col items-center justify-center gap-5">
+        <div className="animate-fadein text-center">
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-300/60 bg-blue-50/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
+            <ShieldCheck className="h-4 w-4" /> Secured Access
+          </p>
+          <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900 dark:text-white sm:text-5xl">Command Center Login</h1>
+        </div>
+
+        <section className="animate-fadein-delayed login-panel w-full max-w-xl rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.22)] dark:border-slate-700 dark:bg-slate-900 sm:p-8">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/30">
+              <LogIn className="h-6 w-6" />
+            </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Login</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Use authorized credentials only</p>
+            </div>
+          </div>
+
+          {error && (
+            <div className="animate-fadein rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 h-5 w-5 text-red-600 dark:text-red-400" />
+                <p className="text-sm font-medium text-red-700 dark:text-red-300">{error}</p>
+              </div>
+            </div>
+          )}
+
+          <form className="mt-5 space-y-5" onSubmit={handleSubmit} noValidate>
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
                 Email address
               </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   id="email"
                   name="email"
                   type="email"
+                  autoComplete="username"
                   required
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md dark:bg-gray-900 dark:text-white dark:border-gray-700"
+                  className={`login-input w-full rounded-xl border py-3 pl-11 pr-3 text-sm outline-none ${fieldErrors.email ? 'border-red-300 focus:border-red-400' : 'border-slate-300 focus:border-blue-500'} dark:border-slate-700 dark:bg-slate-950 dark:text-white`}
                   placeholder="you@example.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }));
+                  }}
                 />
               </div>
+              {fieldErrors.email && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.email}</p>}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="password" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
                 Password
               </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   id="password"
                   name="password"
                   type="password"
+                  autoComplete="current-password"
                   required
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md dark:bg-gray-900 dark:text-white dark:border-gray-700"
-                  placeholder="••••••••"
+                  className={`login-input w-full rounded-xl border py-3 pl-11 pr-3 text-sm outline-none ${fieldErrors.password ? 'border-red-300 focus:border-red-400' : 'border-slate-300 focus:border-blue-500'} dark:border-slate-700 dark:bg-slate-950 dark:text-white`}
+                  placeholder="Enter your password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value });
+                    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: '' }));
+                  }}
                 />
               </div>
+              {fieldErrors.password && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.password}</p>}
             </div>
-
-            {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="shrink-0">
-                    <AlertCircle className="h-5 w-5 text-red-400" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {loading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Sign in'}
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" /> Signing in...
+                </>
+              ) : (
+                'Sign in securely'
+              )}
             </button>
           </form>
+
+          <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            By continuing, you confirm this is an authorized admin environment.
+          </p>
+        </section>
+
+        <section className="animate-fadein login-support w-full max-w-xl rounded-2xl border border-white/60 bg-white/50 p-3 backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/35">
+          <div className="grid grid-cols-3 gap-2 text-center text-xs sm:text-sm">
+            <div className="rounded-xl bg-white/65 px-2 py-2 font-medium text-slate-700 dark:bg-slate-800/60 dark:text-slate-300">Session Rotation</div>
+            <div className="rounded-xl bg-white/65 px-2 py-2 font-medium text-slate-700 dark:bg-slate-800/60 dark:text-slate-300">Attempt Limits</div>
+            <div className="rounded-xl bg-white/65 px-2 py-2 font-medium text-slate-700 dark:bg-slate-800/60 dark:text-slate-300">Audit Events</div>
+          </div>
+        </section>
         </div>
-      </div>
     </div>
   );
 };

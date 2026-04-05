@@ -12,7 +12,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
   const { setTheme, theme } = useTheme();
   const navigate = useNavigate();
   const [date, setDate] = useState(new Date());
-  const [weather, setWeather] = useState<{ temp: number | null, city: string }>({ temp: null, city: 'Loading...' });
+  const [weather, setWeather] = useState<{ temp: number | null, city: string }>({ temp: null, city: '' });
 
   const handleLogout = async () => {
     try {
@@ -30,31 +30,36 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
   }, []);
 
   useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(async (position) => {
+    const loadWeather = async () => {
+      if (!("geolocation" in navigator)) {
+        setWeather({ temp: null, city: 'Location denied' });
+        return;
+      }
+
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+
         const { latitude, longitude } = position.coords;
-        try {
-           // Fetch Weather (Open-Meteo - Free, No Key)
-           const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m`);
-           const weatherData = await weatherRes.json();
-           
-           // Fetch City (BigDataCloud - Free, No Key)
-           const cityRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
-           const cityData = await cityRes.json();
-           
-           setWeather({
-             temp: Math.round(weatherData.current.temperature_2m),
-             city: cityData.city || cityData.locality || cityData.principalSubdivision || 'Unknown'
-           });
-        } catch (error) {
-           console.error("Error fetching weather", error);
-           setWeather(prev => ({ ...prev, city: 'Weather Unavailable' }));
-        }
-      }, (error) => {
-         console.error("Geolocation error", error);
-         setWeather(prev => ({ ...prev, city: 'Loc. Denied' }));
-      });
-    }
+
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m`);
+        const weatherData = await weatherRes.json();
+
+        const cityRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+        const cityData = await cityRes.json();
+
+        setWeather({
+          temp: Math.round(weatherData.current.temperature_2m),
+          city: cityData.city || cityData.locality || cityData.principalSubdivision || 'Unavailable'
+        });
+      } catch (error: any) {
+        const denied = error?.code === 1;
+        setWeather({ temp: null, city: denied ? 'Location denied' : 'Unavailable' });
+      }
+    };
+
+    loadWeather();
   }, []);
 
   const formatDate = (date: Date) => {
@@ -76,14 +81,16 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
 
       <div className="flex items-center gap-3">
         {/* Date & Weather Widget - Moved to Right */}
-        <div className="hidden lg:flex items-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 font-medium mr-2">
+        {weather.city && (
+          <div className="hidden lg:flex items-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 font-medium mr-2">
             <span className="mr-2">{formatDate(date)}</span>
             <span className="mx-2 text-gray-300 dark:text-gray-500">|</span>
             <Sun className="w-4 h-4 text-orange-400 mr-1" />
             <span>
-              {weather.temp !== null ? `${weather.temp}°C` : '--°C'} {weather.city}
+              {weather.temp !== null ? `${weather.temp}°C` : ''} {weather.city}
             </span>
-        </div>
+          </div>
+        )}
 
         {/* Theme Toggle */}
         <div className="hidden sm:flex items-center bg-gray-100 dark:bg-gray-800 rounded-full p-1 mr-2">

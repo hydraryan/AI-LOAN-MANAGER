@@ -6,6 +6,7 @@ export interface IBorrower extends Document {
   email?: string;
   phone: string;
   address: string;
+  description?: string;
 }
 
 const borrowerSchema = new Schema<IBorrower>(
@@ -22,7 +23,8 @@ const borrowerSchema = new Schema<IBorrower>(
       sparse: true
     },
     phone: String,
-    address: String
+    address: String,
+    description: String
   },
   { timestamps: true }
 );

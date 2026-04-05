@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { Loan, Borrower, Savings, Transaction } from "../models";
 
+const safeReportError = (res: Response, scope: string, err: unknown) => {
+  console.error(`${scope} error`, err);
+  return res.status(500).json({ error: "Failed to generate report metrics" });
+};
+
 const formatDay = (date: Date) =>
   date.toLocaleDateString("en-IN", { weekday: "short" });
 
@@ -18,9 +23,9 @@ const endOfDay = (date: Date) => {
 
 export const getDashboardStats = async (_req: Request, res: Response) => {
   try {
-    const loans = await Loan.find();
-    const borrowers = await Borrower.find();
-    const savings = await Savings.find();
+    const loans = await Loan.find().lean();
+    const borrowers = await Borrower.find().lean();
+    const savings = await Savings.find().lean();
 
     // 💰 Total Disbursement
     const totalDisbursement = loans.reduce((sum, l) => sum + l.principal, 0);
@@ -49,14 +54,16 @@ export const getDashboardStats = async (_req: Request, res: Response) => {
       loanStatus
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return safeReportError(res, "getDashboardStats", err);
   }
 };
 
 export const getHomeDashboardMetrics = async (_req: Request, res: Response) => {
   try {
-    const loans = await Loan.find();
-    const transactions = await Transaction.find();
+    const loans = await Loan.find().select("status principal schedule").lean();
+    const loanTransactions: any[] = await Transaction.find({ loanId: { $exists: true, $ne: null } } as any)
+      .select("amount status postedDate createdAt")
+      .lean();
 
     const now = new Date();
     const todayStart = startOfDay(now);
@@ -70,16 +77,21 @@ export const getHomeDashboardMetrics = async (_req: Request, res: Response) => {
     let overdue1to30 = 0;
     let overdue31to90 = 0;
     let overdue90Plus = 0;
+    let scheduledPaidToday = 0;
 
     let totalOutstanding = 0;
     let overdueOutstanding = 0;
 
     for (const loan of loans) {
-      for (const installment of loan.schedule || []) {
+      for (const installment of (loan as any).schedule || []) {
         const dueDate = new Date(installment.dueDate);
         const due = Number(installment.amount || 0);
         const paid = Number(installment.paidAmount || 0);
         const unpaid = Math.max(due - paid, 0);
+
+        if (dueDate >= todayStart && dueDate <= todayEnd && paid > 0) {
+          scheduledPaidToday += paid;
+        }
 
         totalOutstanding += unpaid;
 
@@ -111,12 +123,15 @@ export const getHomeDashboardMetrics = async (_req: Request, res: Response) => {
       }
     }
 
-    const todayCollection = transactions
-      .filter((t) => {
-        const createdAt = new Date((t as any).createdAt);
-        return createdAt >= todayStart && createdAt <= todayEnd;
+    const transactionTodayCollection = loanTransactions
+      .filter((t: any) => {
+        const posted = new Date(t.postedDate || t.createdAt);
+        const status = String(t.status || "").toLowerCase();
+        return posted >= todayStart && posted <= todayEnd && (status === "approved" || status === "success");
       })
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+    const todayCollection = transactionTodayCollection > 0 ? transactionTodayCollection : scheduledPaidToday;
 
     const pendingApprovalLoans = loans.filter(
       (l) => String(l.status || "").toLowerCase() === "pending"
@@ -128,8 +143,8 @@ export const getHomeDashboardMetrics = async (_req: Request, res: Response) => {
       0
     );
 
-    const pendingRepayments = transactions.filter(
-      (t) => String(t.status || "").toLowerCase() === "pending"
+    const pendingRepayments = loanTransactions.filter(
+      (t: any) => String(t.status || "").toLowerCase() === "pending"
     );
 
     const pendingRepaymentsCount = pendingRepayments.length;
@@ -149,7 +164,7 @@ export const getHomeDashboardMetrics = async (_req: Request, res: Response) => {
     }
 
     for (const loan of loans) {
-      for (const installment of loan.schedule || []) {
+      for (const installment of (loan as any).schedule || []) {
         const dueDate = startOfDay(new Date(installment.dueDate));
         const key = dueDate.toISOString().slice(0, 10);
         const row = trendMap.get(key);
@@ -159,9 +174,12 @@ export const getHomeDashboardMetrics = async (_req: Request, res: Response) => {
       }
     }
 
-    for (const t of transactions) {
-      const createdAt = startOfDay(new Date((t as any).createdAt));
-      const key = createdAt.toISOString().slice(0, 10);
+    for (const t of loanTransactions) {
+      const status = String(t.status || "").toLowerCase();
+      if (!(status === "approved" || status === "success")) continue;
+
+      const postedAt = startOfDay(new Date(t.postedDate || t.createdAt));
+      const key = postedAt.toISOString().slice(0, 10);
       const row = trendMap.get(key);
       if (row) {
         row.actual += Number(t.amount || 0);
@@ -207,6 +225,6 @@ export const getHomeDashboardMetrics = async (_req: Request, res: Response) => {
       ]
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return safeReportError(res, "getHomeDashboardMetrics", err);
   }
 };

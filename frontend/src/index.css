@@ -95,3 +95,73 @@
 .animate-fadein {
   animation: fadein 0.6s cubic-bezier(.4,0,.2,1);
 }
+
+.animate-fadein-delayed {
+  animation: fadein 0.7s cubic-bezier(.2,.7,.2,1) 0.12s both;
+}
+
+@keyframes orbFloat {
+  0% { transform: translateY(0) translateX(0) scale(1); }
+  50% { transform: translateY(-16px) translateX(10px) scale(1.05); }
+  100% { transform: translateY(0) translateX(0) scale(1); }
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(56px);
+  opacity: 0.22;
+  pointer-events: none;
+  animation: orbFloat 9s ease-in-out infinite;
+}
+
+.login-orb-left {
+  width: 280px;
+  height: 280px;
+  left: -70px;
+  top: 20%;
+  background: linear-gradient(135deg, #fb923c, #f43f5e);
+}
+
+.login-orb-right {
+  width: 320px;
+  height: 320px;
+  right: -90px;
+  top: 55%;
+  background: linear-gradient(135deg, #0ea5e9, #1d4ed8);
+  animation-delay: 1.8s;
+}
+
+.login-panel {
+  position: relative;
+  z-index: 2;
+}
+
+.login-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 1.5rem;
+  background: linear-gradient(140deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%);
+}
+
+.login-support {
+  z-index: 1;
+}
+
+.login-input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.login-input:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
+}
+
+@media (max-width: 640px) {
+  .login-orb-left,
+  .login-orb-right {
+    display: none;
+  }
+}
