@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { CookieOptions, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -10,19 +10,34 @@ const REFRESH_COOKIE_NAME = env.REFRESH_COOKIE_NAME;
 const ACCESS_TOKEN_TTL = env.ACCESS_TOKEN_TTL;
 const REFRESH_TTL_DAYS = env.REFRESH_TTL_DAYS;
 const REFRESH_SECRET = env.REFRESH_SECRET;
-const IS_PROD = env.IS_PROD;
 
-const getCookieOptions = (maxAgeMs: number) => ({
+const cookieBaseOptions: Pick<CookieOptions, "httpOnly" | "secure" | "sameSite" | "path" | "domain"> = {
   httpOnly: true,
-  secure: IS_PROD,
-  sameSite: "lax" as const,
-  maxAge: maxAgeMs,
-  path: "/"
+  secure: env.COOKIE_SECURE,
+  sameSite: env.COOKIE_SAME_SITE,
+  path: "/",
+  ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {})
+};
+
+const getCookieOptions = (maxAgeMs: number): CookieOptions => ({
+  ...cookieBaseOptions,
+  maxAge: maxAgeMs
+});
+
+const getClearCookieOptions = (): CookieOptions => ({
+  ...cookieBaseOptions
 });
 
 const getClientMeta = (req: Request) => {
   const userAgent = req.headers["user-agent"] || "unknown";
-  const ip = req.ip || req.socket.remoteAddress || "unknown";
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const forwardedIp =
+    typeof forwardedFor === "string"
+      ? forwardedFor.split(",")[0]?.trim()
+      : Array.isArray(forwardedFor)
+        ? forwardedFor[0]
+        : undefined;
+  const ip = forwardedIp || req.ip || req.socket.remoteAddress || "unknown";
 
   return {
     userAgentHash: crypto.createHash("sha256").update(String(userAgent)).digest("hex"),
@@ -223,6 +238,7 @@ export const logout = async (req: Request, res: Response) => {
   try {
     const { userAgentHash, ipHash } = getClientMeta(req);
     const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
+    const clearCookieOptions = getClearCookieOptions();
     let userId: string | undefined;
 
     if (refreshToken) {
@@ -235,8 +251,8 @@ export const logout = async (req: Request, res: Response) => {
       }
     }
 
-    res.clearCookie(ACCESS_COOKIE_NAME, { path: "/" });
-    res.clearCookie(REFRESH_COOKIE_NAME, { path: "/" });
+    res.clearCookie(ACCESS_COOKIE_NAME, clearCookieOptions);
+    res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions);
 
     logAuthEvent({
       action: "logout",
@@ -256,13 +272,14 @@ export const logout = async (req: Request, res: Response) => {
 export const logoutAllSessions = async (req: any, res: Response) => {
   try {
     const { userAgentHash, ipHash } = getClientMeta(req);
+    const clearCookieOptions = getClearCookieOptions();
     await AuthSession.updateMany(
       { userId: req.user?.id, revokedAt: { $exists: false } },
       { $set: { revokedAt: new Date() } }
     );
 
-    res.clearCookie(ACCESS_COOKIE_NAME, { path: "/" });
-    res.clearCookie(REFRESH_COOKIE_NAME, { path: "/" });
+    res.clearCookie(ACCESS_COOKIE_NAME, clearCookieOptions);
+    res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions);
 
     logAuthEvent({ action: "logout-all", status: "success", userId: String(req.user?.id || ""), ipHash, userAgentHash });
 
